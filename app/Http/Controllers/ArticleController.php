@@ -4,18 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\User;
+use http\Env\Response;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ArticleController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return array
+     * @return array|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response
      */
     public function index()
     {
-        return Article::all()->toArray();
+        return response(Article::all()->toArray(), 200);
     }
 
     /**
@@ -34,10 +36,10 @@ class ArticleController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(\App\Http\Requests\Article\PostRequest $request)
     {
         $data = $request->only(['title', 'description']);
-        return User::all()->find(1)->articles()->create($data);
+        return response(Auth::user()->articles()->create($data), 200);
     }
 
     /**
@@ -48,7 +50,7 @@ class ArticleController extends Controller
      */
     public function show(Article $article)
     {
-        return Article::all()->find($article);
+        return response(Article::all()->find($article), 200);
     }
 
     /**
@@ -67,21 +69,29 @@ class ArticleController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\Article  $article
-     * @return \Illuminate\Http\Response
+     * @return Article|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response
      */
-    public function update(Request $request, Article $article)
+    public function update(\App\Http\Requests\Article\PutRequest $request, Article $article)
     {
-        //
+        if (Auth::user()->id != $article->user()->id) {
+            return response(null, 403);
+        }
+        $article->update($request->only('title', 'description'));
+        return response($article, 202);
     }
 
     /**
      * Remove the specified resource from storage.
      *
      * @param  \App\Models\Article  $article
-     * @return \Illuminate\Http\Response
+     * @return Article|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response
      */
     public function destroy(Article $article)
     {
-        //
+        if (Auth::user()->id != $article->user_id) {
+            return response(null, 403);
+        }
+        $article->delete();
+        return response(null, 204);
     }
 }
